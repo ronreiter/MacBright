@@ -71,6 +71,7 @@ def tray_click():
     rect = tray.geometry()
     dialog.move(rect.x(), rect.y())
     dialog.show()
+    dialog.raise_()
    
 
 def close_dialog(x):
@@ -120,6 +121,6 @@ bottom_layout.addWidget(QLabel("MacBright Brightness Widget\nCreated by Ron Reit
 bottom_layout.addWidget(quit_action)
 layout.addLayout(bottom_layout)
 
+tray_click()
 become_background()
-
 app.exec_()
