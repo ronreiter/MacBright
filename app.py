@@ -1,15 +1,44 @@
 from PyQt5.QtGui import *
 from PyQt5.QtWidgets import *
-from PyQt5.QtCore import Qt, QPoint
+from PyQt5.QtCore import Qt, QPoint, QObject
 from PyQt5 import QtCore
 
 import sys
 
-from ctypes import CDLL, c_int, c_double
+from ctypes import CDLL, c_int, c_double, POINTER, c_uint32, Structure
+
 CoreDisplay = CDLL("/System/Library/Frameworks/CoreDisplay.framework/CoreDisplay")
 CoreDisplay.CoreDisplay_Display_SetUserBrightness.argtypes = [c_int, c_double]
 CoreDisplay.CoreDisplay_Display_GetUserBrightness.argtypes = [c_int]
 CoreDisplay.CoreDisplay_Display_GetUserBrightness.restype = c_double
+
+class ProcessSerialNumber(Structure):
+    _fields_ = [
+        ('highLongOfPSN', c_uint32),
+        ('lowLongOfPSN', c_uint32),
+        ]
+
+
+kNoProcess = 0
+kSystemProcess = 1
+kCurrentProcess = 2
+
+kProcessTransformToForegroundApplication = 1
+kProcessTransformToBackgroundApplication = 2
+kProcessTransformToUIElementAppication = 4
+
+ApplicationServices = CDLL('/System/Library/Frameworks/ApplicationServices.framework/ApplicationServices')
+ApplicationServices.TransformProcessType.argtypes = [POINTER(ProcessSerialNumber), c_uint32]
+ApplicationServices.SetFrontProcess.argtypes = [POINTER(ProcessSerialNumber)]
+
+def become_foreground():
+    psn = ProcessSerialNumber(0, kCurrentProcess)
+    ApplicationServices.TransformProcessType(psn, kProcessTransformToForegroundApplication)
+    ApplicationServices.SetFrontProcess(psn)
+
+def become_background():
+    psn = ProcessSerialNumber(0, kCurrentProcess)
+    ApplicationServices.TransformProcessType(psn, kProcessTransformToUIElementAppication)
 
 # this is based on undocumented MacOS APIs, unfortunately
 # https://alexdelorenzo.dev/programming/2018/08/16/reverse_engineering_private_apple_apis.html
@@ -38,9 +67,14 @@ def tray_click():
     slider.setValue(brightness)
 
     # move the dialog right next to the tray icon and show it
+    become_foreground()
     rect = tray.geometry()
     dialog.move(rect.x(), rect.y())
-    dialog.show()        
+    dialog.show()
+   
+
+def close_dialog(x):
+    become_background()
 
 def value_changed():
     set_brightness_coredisplay(0, slider.value())
@@ -54,20 +88,23 @@ app.setQuitOnLastWindowClosed(False)
 # create a small frameless popup dialog to contain the slider
 dialog = QDialog()
 dialog.setWindowFlags(Qt.WindowStaysOnTopHint | Qt.FramelessWindowHint | Qt.Popup)
-dialog.resize(250, 30)
+dialog.resize(250, 0)
+dialog.closeEvent = close_dialog
 
 # create the brightness slider
 slider = QSlider(Qt.Horizontal)
 slider.valueChanged.connect(value_changed)
 
-# create a simple layout with the slider, and add it to the dialog
-layout = QVBoxLayout()
-layout.addWidget(slider)
-dialog.setLayout(layout)
 
 # Create the icon
 #icon = QIcon("color.png")
 icon = icon_from_base64(icon_data)
+
+# create a simple layout with the slider, and add it to the dialog
+layout = QVBoxLayout()
+layout.addWidget(QLabel("Brightness:"))
+layout.addWidget(slider)
+dialog.setLayout(layout)
 
 # Create the tray
 tray = QSystemTrayIcon()
@@ -75,11 +112,14 @@ tray.setIcon(icon)
 tray.setVisible(True)
 tray.activated.connect(tray_click)
 
-# Create the menu
-# menu = QMenu()
-# quit_action = QAction("Quit")
-# quit_action.triggered.connect(quit)
-# menu.addAction(action3)
-# tray.setContextMenu(menu)
+bottom_layout = QHBoxLayout()
+
+quit_action = QPushButton("Quit")
+quit_action.clicked.connect(quit)
+bottom_layout.addWidget(QLabel("MacBright Brightness Widget\nCreated by Ron Reiter"))
+bottom_layout.addWidget(quit_action)
+layout.addLayout(bottom_layout)
+
+become_background()
 
 app.exec_()

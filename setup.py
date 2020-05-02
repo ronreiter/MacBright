@@ -5,7 +5,7 @@ APP = ['app.py']
 OPTIONS = {
     'argv_emulation': True, 
     'includes': ['PyQt5'],
-    'iconfile': 'macbright-yellow.icns',
+    'iconfile': 'images/macbright-yellow.icns',
     'plist': {
         'CFBundleName': APP_NAME,
         'CFBundleDisplayName': APP_NAME,
@@ -14,7 +14,7 @@ OPTIONS = {
         'CFBundleVersion': "0.1.0",
         'CFBundleShortVersionString': "0.1.0",
         'NSHumanReadableCopyright': u"Ron Reiter",
-        'LSUIElement': True
+        #'LSUIElement': True
     }    
 }
 
