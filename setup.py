@@ -14,6 +14,8 @@ OPTIONS = {
         'CFBundleVersion': "0.1.0",
         'CFBundleShortVersionString': "0.1.0",
         'NSHumanReadableCopyright': u"Ron Reiter",
+        'RunAtLoad': True,
+        'NSRequiresAquaSystemAppearance': True,
     }    
 }
 

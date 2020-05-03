@@ -31,7 +31,7 @@ ApplicationServices = CDLL('/System/Library/Frameworks/ApplicationServices.frame
 ApplicationServices.TransformProcessType.argtypes = [POINTER(ProcessSerialNumber), c_uint32]
 ApplicationServices.SetFrontProcess.argtypes = [POINTER(ProcessSerialNumber)]
 
-def become_foreground():
+def become_foreground():    
     psn = ProcessSerialNumber(0, kCurrentProcess)
     ApplicationServices.TransformProcessType(psn, kProcessTransformToForegroundApplication)
     ApplicationServices.SetFrontProcess(psn)
@@ -59,7 +59,17 @@ def icon_from_base64(base64):
 def quit():
     sys.exit(0)
         
+dialog_open = False
+
 def tray_click():
+    global dialog_open
+    if dialog_open:
+        close_dialog(None)
+    else:
+        open_dialog()
+        dialog_open = True
+
+def open_dialog():
     # get the current brightness value
     brightness = get_brightness_coredisplay(0)
 
@@ -75,6 +85,8 @@ def tray_click():
    
 
 def close_dialog(x):
+    global dialog_open
+    dialog_open = False
     become_background()
 
 def value_changed():
